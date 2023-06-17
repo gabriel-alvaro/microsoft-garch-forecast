@@ -1,0 +1,223 @@
+---
+title: "Trabalho de Séries Temporais"
+author: "Geovani Reolon ; Gabriel Alvaro ; Pedro Cabrini"
+date: "2023-05-29"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Carregar bibliotecas
+library(ggfortify)
+library(fpp3)
+library(dygraphs)
+library(tsibble)
+library(zoo)
+library(rugarch)
+```
+
+
+Neste trabalho, coletamos e analisamos dados da ação MSFT (Microsoft) entre o período de 2007 até 2023, esses foram extraídos usando o pacote quantmod do R. A seguir, apresentamos uma análise do conjunto de dados, ajuste do modelo e análise de resíduos. 
+
+## Análise Exploratória de Dados
+
+Sabemos que é melhor trabalhar com os retornos do que os preços de um ativo financeiro, para estabilizar a variâncias dos dados e evitar comportamentos de tendência não determinística. Então, utilizamos os retornos diários através do preço de fechamento da ação na data.
+
+```{r}
+microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE, 
+                                    from = '2007-01-01', return.class = 'zoo')# Coletando os dados
+microsoft = microsoft_df[,6] # Selecionando preços
+microsoft_retorno = diff(microsoft)
+
+dygraphs::dygraph(microsoft, ylab = "Preços ajustados", xlab = "Tempo", main = "Série temporal do histórico de preços ajustados") # Preços diários
+dygraphs::dygraph(microsoft_retorno, ylab = "Retornos diários", xlab = "Tempo", main = "Série Temporal dos retornos diários") # Retornos diários
+```
+
+
+Entretanto, vendo seu gráfico temporal, decidimos optar pelo log retorno dos preços de fechamento, afim de estabilizar mais a variância da série e garantir estacionariedade. Assim, analisando o retorno do log do preço de fechamento, tirando alguns pontos extremos, temos que a série aparenta ter média e variância constante.
+
+```{r}
+log_retorno_dif = diff(log(microsoft))
+dygraphs::dygraph(log_retorno_dif, ylab = "Retornos diários (Log)", xlab = "Tempo", main = "Série Temporal dos retornos diários do Log") # Retornos diários Log 
+```
+
+
+Pelas estastíticas sumárias, temos que a média está bem próximo de 0. Além disso, verificando a autocorrelação, temos que grande parte se encontra dentro das bandas de confiança, porém vemos que o lag 1 ultrpassa consideravelmente a banda, o que não é um bom indicativo. Por outro lado, analisando a autocorrelação parcial, econtramos um cenário parecido, onde grande parte está dentro das bandas de confiança, exceto por alguns lags. Nesse cenário, a FACP sugere um modelo AR(2) enquanto a FAC sugere um modelo MA(1), então vamos analisar as possíves combinações para encontrar o melhor modelo.
+
+```{r}
+summary(log_retorno_dif)
+```
+
+```{r}
+op = par(mfrow = c(1, 2))
+acf(log_retorno_dif, main = "Correlograma", na.action = na.pass)
+pacf(log_retorno_dif, main = "Correlação Parcial", na.action = na.pass)
+par(op)
+```
+
+```{r}
+Box.test(log_retorno_dif, type = "Ljung-Box", lag = 10)
+```
+
+
+## Escolha do modelo
+
+```{r}
+df = fortify.zoo(log_retorno_dif) 
+df_tsible = df %>% as_tsibble(index = Index)
+#fit_sugerido = df_tsible %>% tsibble::fill_gaps() %>% model(ARIMA(log_retorno_dif))
+#report(fit_sugerido)
+```
+
+Analisando, os resultados mostram que o modelo ARIMA(1,0,2) é o melhor modelo para ser escolhido, pois tem o menor AIC.
+
+```{r, warning=FALSE}
+# Todas as combinações possíveis de p=0 até p=max e q=0 até q=max
+pars_microsoft = expand.grid(ar = 0:2, diff = 0, ma = 0:2)
+
+# Local onde os resultados de cada modelo será armazenado
+modelo_microsoft = list()
+
+# Estimar os parâmetros dos modelos usando Máxima Verossimilhança (ML)
+for (i in 1:nrow(pars_microsoft)) {
+  modelo_microsoft[[i]] = arima(x = df$log_retorno_dif, order = unlist(pars_microsoft[i, 1:3]), method = "ML")
+}
+
+# Obter o logaritmo da verossimilhança (valor máximo da função)
+log_verossimilhanca_microsoft = list()
+for (i in 1:length(modelo_microsoft)) {
+  log_verossimilhanca_microsoft[[i]] = modelo_microsoft[[i]]$loglik
+}
+
+# Calcular o AIC
+aicarima_microsoft = list()
+for (i in 1:length(modelo_microsoft)) {
+  aicarima_microsoft[[i]] = stats::AIC(modelo_microsoft[[i]])
+}
+
+# Calcular o BIC
+bicarima_microsoft = list()
+for (i in 1:length(modelo_microsoft)) {
+  bicarima_microsoft[[i]] = stats::BIC(modelo_microsoft[[i]])
+}
+
+# Quantidade de parâmetros estimados por modelo
+quant_paramentros_microsoft = list()
+for (i in 1:length(modelo_microsoft)) {
+  quant_paramentros_microsoft[[i]] = length(modelo_microsoft[[i]]$coef)+1 # +1 porque temos a variância do termo de erro 
+}
+
+# Montar a tabela com os resultados
+especificacao_microsoft = paste0("ARIMA",pars_microsoft$ar, pars_microsoft$diff, pars_microsoft$ma)
+
+resultado_microsoft <- data.frame(especificacao_microsoft, 
+                                  ln_verossimilhanca = unlist(log_verossimilhanca_microsoft),aic = unlist(aicarima_microsoft), bic = unlist(bicarima_microsoft))
+
+resultado_microsoft
+#knitr::kable(resultado_microsoft, format = "pandoc", digits = c(0,2,0,0,2), align = 'c')
+```
+
+```{r}
+modelo_microsoft[[8]]
+```
+
+A FAC dos resíduos do modelo mostra que a maior parte das autocorrelações estão dentro das bandas de confiança, indicando que os resíduos são não autocorrelacionados. Além disso, aplicando o teste de Ljung-Box, não rejeitamos a hipótese nula de que os resíduos são não autocorrelacionados.
+
+```{r, echo=FALSE, fig.width=9, fig.height=5,warning=FALSE, message=FALSE}
+# Função de autocorrelação dos resíduos
+arima102_acf <- acf(modelo_microsoft[[8]]$residuals, na.action = na.pass, plot = FALSE)
+
+# Gráfico da função de autocorrelação. 
+plot(arima102_acf, main = "", ylab = "", xlab = "Defasagem")
+title("FAC dos Resíduos do ARIMA(1,0,2)", adj = 0.5, line = 1)
+```
+
+```{r}
+Box.test(modelo_microsoft[[8]]$residuals, type = "Ljung-Box")
+```
+
+Ainda mais, verificando se os resíduos são normalmente distribuídos, vemos pelo histograma que ele aparenta seguir normalidade. Porém, por meio do teste de Shapiro, rejeitamos a hipótese nula do teste de que os dados são normalmente distribuídos e observando o q-q plot temos que a distribuição dos resíduos está mais ajustado para uma t-student devido as caudas pesadas.
+
+```{r}
+op = par(mfrow = c(1, 2))
+hist(modelo_microsoft[[8]]$residuals, main = "Histograma dos resíduos", col = "lightblue",
+     xlab = "Valores resíduos", ylab = "Frequência")
+qqnorm(modelo_microsoft[[8]]$residuals)
+qqline(modelo_microsoft[[8]]$residuals)
+par(op)
+```
+
+```{r}
+shapiro.test(modelo_microsoft[[8]]$residuals)
+```
+
+Também, ao analisar a presença de heterocedasticidade condicional por meio da FAC dos resíduos ao quadrado, encontramos várias defasagens fora das bandas de confiança indicando a presença de heterocedasticidade condicional nos resíduos obtidos do modelo. Logo, precisamos utilizar modelos de heterocedasticidade condicional.
+
+
+```{r, echo=FALSE, fig.width=9, fig.height=5,warning=FALSE, message=FALSE}
+# Teste de heterocedasticidade condicional
+arima102_acf_square <- acf(modelo_microsoft[[8]]$residuals^2, na.action = na.pass, plot = FALSE)
+plot(arima102_acf_square, main = "", ylab = "", xlab = "Defasagem")
+title("FAC do quadrado dos resíduos do ARIMA(1,0,2)", adj = 0.5, line = 1)
+```
+
+```{r}
+Box.test(modelo_microsoft[[8]]$residuals^2, type = "Ljung-Box")
+```
+## Modelos de heterocedasticidade condicional
+
+Ajustando 
+
+```{r}
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(3, 0)), distribution = 'std')
+fit_01 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+fit_01
+```
+
+```{r}
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(4, 0)), distribution = 'std')
+fit_02 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+fit_02
+```
+
+```{r}
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(5, 0)), distribution = 'std')
+fit_03 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+fit_03
+```
+
+```{r}
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(6, 0)), distribution = 'std')
+fit_04 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+fit_04
+```
+
+```{r}
+e_hat = fit_04@fit$residuals/fit_04@fit$sigma
+op = par(mfrow = c(1,2))
+acf(e_hat)
+acf(e_hat^2)
+par(op)
+```
+
+```{r}
+# fore_05 = ugarchforecast(fit_05, n.ahead = 5)
+# fore_05
+```
+
+```{r}
+# teste = forecast(modelo_microsoft[[8]])
+# modelo_microsoft[[8]]
+```
+
+
+
+
+
+
+
