@@ -214,7 +214,14 @@ par(op)
 # teste = forecast(modelo_microsoft[[8]])
 # modelo_microsoft[[8]]
 ```
+Cross-Validation
+x = sample(df_tsible$log_retorno_dif,30)
 
+far2 = function(x, h){
+forecast(Arima(x, order=c(1, 0, 2)), h = h)
+}
+
+tsCV(x, forecastfunction = far2, h = 7, window = 10)
 
 
 
