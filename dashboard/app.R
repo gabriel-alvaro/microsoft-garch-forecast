@@ -17,18 +17,61 @@ sidebar = dashboardSidebar(
 
 # body
 
+date_selector = fluidRow(
+  class = "centered-row",
+  box(
+    title = "Filtro de Data",
+    status = "primary",
+    solidHeader = TRUE,
+    width = 3,
+    dateRangeInput("date_range", "", 
+                   start = "2007-01-04", end = Sys.Date())))
+
 frow1 = fluidRow(
-  box(
-    title = "Histórico de Preços",
-    status = "primary",
-    solidHeader = TRUE,
-    dygraphOutput("plot_ajustado", height = "400px")
+  class = "centered-row",
+  box(width = 4,
+      title = "Histórico de Preços",
+      status = "primary",
+      solidHeader = TRUE,
+      dygraphOutput("plot_ajustado", height = "300px")
   ),
-  box(
-    title = "Retornos Diários",
-    status = "primary",
-    solidHeader = TRUE,
-    dygraphOutput("plot_retornos", height = "400px")
+  box(width = 4,
+      title = "Retornos Diários",
+      status = "primary",
+      solidHeader = TRUE,
+      dygraphOutput("plot_retorno", height = "300px")
+  )
+)
+
+frow2 = fluidRow(
+  class = "centered-row",
+  box(width = 4,
+      title = "Log-Retornos Diários",
+      status = "primary",
+      solidHeader = TRUE,
+      dygraphOutput("plot_logretorno", height = "300px")
+  ),
+  box(width = 4,
+      title = "Log-Volume Diário",
+      status = "primary",
+      solidHeader = TRUE,
+      dygraphOutput("plot_logvolume", height = "300px")
+  )
+)
+
+frow3 = fluidRow(
+  class= "centered-row",
+  box(width = 4,
+      title = "Correlação",
+      status = "primary",
+      solidHeader = TRUE,
+      plotOutput("plot_acf", height = "300px")
+  ),
+  box(width = 4,
+      title = "Correlação Parcial",
+      status = "primary",
+      solidHeader = TRUE,
+      plotOutput("plot_pacf", height = "300px")
   )
 )
 
@@ -50,16 +93,10 @@ body = dashboardBody(
             p("Trabalho desenvolvido por"),
             ftext1),
     tabItem("dashboard",
-            fluidRow(
-              class = "centered-row",
-              box(
-                title = "Filtro de Data",
-                status = "primary",
-                solidHeader = TRUE,
-                width = 6,
-                dateRangeInput("date_range", "", 
-                               start = "2007-01-04", end = Sys.Date()))),
-            frow1)
+            date_selector,
+            frow1,
+            frow2,
+            frow3)
   ))
 
 ui = dashboardPage(title = "ME607",
@@ -71,41 +108,66 @@ server = function(input, output){
   
   ## coleta dados
   microsoft_df = reactive({
-    data1 = fortify.zoo(quantmod::getSymbols("MSFT", 
-                                             src = "yahoo", auto.assign = FALSE, 
-                                             from = '2007-01-01', return.class = 'zoo'))
-    data1
+    data = fortify.zoo(quantmod::getSymbols("MSFT", 
+                                            src = "yahoo", auto.assign = FALSE, 
+                                            from = '2007-01-01', return.class = 'zoo'))
+    data
   })
   
   microsoft = reactive({
-    data2 = microsoft_df()[,c(1,7)]
-    data2
+    data = microsoft_df()[,c(1,7)]
+    data = subset(data, Index >= input$date_range[1] & Index <= input$date_range[2])
+    data
   })
   
   microsoft_retorno = reactive({
-    data3 = microsoft()
-    data3[,2] = c(NA, diff(microsoft()[,2]))
-    data3
+    data = microsoft()
+    data[,2] = c(NA, diff(microsoft()[,2]))
+    data = subset(data, Index >= input$date_range[1] & Index <= input$date_range[2])
+    data
   })
   
-  microsoft_filtered = reactive({
-    data4 = subset(microsoft(), Index >= input$date_range[1] & Index <= input$date_range[2])
-    data4
+  microsoft_logretorno = reactive({
+    data = microsoft()
+    data[,2] = c(NA, diff(log(microsoft()[,2])))
+    data = subset(data, Index >= input$date_range[1] & Index <= input$date_range[2])
+    data
   })
   
-  microsoft_retorno_filtered = reactive({
-    data5 = subset(microsoft_retorno(), Index >= input$date_range[1] & Index <= input$date_range[2])
-    data5
+  microsoft_logvolume = reactive({
+    data = microsoft_df()[,c(1,6)]
+    data[,2] = log(data[,2])
+    data = subset(data, Index >= input$date_range[1] & Index <= input$date_range[2])
   })
   
   ## plot precos ajustados
   output$plot_ajustado = renderDygraph({
-    dygraph(microsoft_filtered(), ylab = "Preços Ajustados", xlab = "Tempo")
+    dygraph(microsoft(), ylab = "Preços Ajustados", xlab = "Tempo")
   })
   
-  ## plot retornos
-  output$plot_retornos = renderDygraph({
-    dygraph(microsoft_retorno_filtered(), ylab = "Retornos Diários", xlab = "Tempo")
+  ## plot retorno
+  output$plot_retorno = renderDygraph({
+    dygraph(microsoft_retorno(), ylab = "Retornos Diários", xlab = "Tempo")
+  })
+  
+  ## plot log retorno
+  output$plot_logretorno = renderDygraph({
+    dygraph(microsoft_logretorno(), ylab = "(log) Retornos Diários", xlab = "Tempo")
+  })
+  
+  ## plot log volume
+  output$plot_logvolume = renderDygraph({
+    dygraph(microsoft_logvolume(), ylab = "(log) Volume Diário", xlab = "Tempo")
+  })
+  
+  ## plot acf
+  output$plot_acf = renderPlot({
+    acf(microsoft_retorno()[,2], na.action = na.pass, main = "", ylab = "")
+  })
+  
+  ## plot pacf
+  output$plot_pacf = renderPlot({
+    pacf(microsoft_retorno()[,2], na.action = na.pass, main = "", ylab = "")
   })
 }
 
