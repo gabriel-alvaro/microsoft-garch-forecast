@@ -19,6 +19,7 @@ library(dygraphs)
 library(tsibble)
 library(zoo)
 library(rugarch)
+library(forecast)
 ```
 
 
@@ -78,7 +79,7 @@ Analisando, os resultados mostram que o modelo ARIMA(1,0,2) é o melhor modelo p
 
 ```{r, warning=FALSE}
 # Todas as combinações possíveis de p=0 até p=max e q=0 até q=max
-pars_microsoft = expand.grid(ar = 0:2, diff = 0, ma = 0:2)
+pars_microsoft = expand.grid(ar = 0:2, diff = 0:2, ma = 0:2)
 
 # Local onde os resultados de cada modelo será armazenado
 modelo_microsoft = list()
@@ -118,7 +119,7 @@ especificacao_microsoft = paste0("ARIMA",pars_microsoft$ar, pars_microsoft$diff,
 resultado_microsoft <- data.frame(especificacao_microsoft, 
                                   ln_verossimilhanca = unlist(log_verossimilhanca_microsoft),aic = unlist(aicarima_microsoft), bic = unlist(bicarima_microsoft))
 
-resultado_microsoft
+resultado_microsoft[order(resultado_microsoft$aic),]
 #knitr::kable(resultado_microsoft, format = "pandoc", digits = c(0,2,0,0,2), align = 'c')
 ```
 
@@ -169,6 +170,7 @@ title("FAC do quadrado dos resíduos do ARIMA(1,0,2)", adj = 0.5, line = 1)
 ```{r}
 Box.test(modelo_microsoft[[8]]$residuals^2, type = "Ljung-Box")
 ```
+
 ## Modelos de heterocedasticidade condicional
 
 Ajustando 
@@ -198,6 +200,12 @@ fit_04
 ```
 
 ```{r}
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(1, 1)), distribution = 'std')
+fit_05 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+fit_05
+```
+
+```{r}
 e_hat = fit_04@fit$residuals/fit_04@fit$sigma
 op = par(mfrow = c(1,2))
 acf(e_hat)
@@ -206,22 +214,55 @@ par(op)
 ```
 
 ```{r}
-# fore_05 = ugarchforecast(fit_05, n.ahead = 5)
-# fore_05
+## Cross-Validation
+# 
+# x = df_tsible$log_retorno_dif[0:101]
+# 
+# 
+# far2 = function(x, h){
+#   forecast(Arima(x, order=c(1, 0, 2)), h = h)
+# }
+# 
+# tsCV(x, forecastfunction = far2, h = 2, window = 8)
+
 ```
 
 ```{r}
-# teste = forecast(modelo_microsoft[[8]])
-# modelo_microsoft[[8]]
+microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE,
+                                    from = '2007-01-01', return.class = 'zoo')# Coletando os dados
+microsoft = microsoft_df[,6] # Selecionando preços
+microsoft_retorno = diff(microsoft)
+
+log_retorno_dif = diff(log(microsoft))
+
+df = fortify.zoo(log_retorno_dif)
+df_tsible = df %>% as_tsibble(index = Index)
+
+train = df_tsible %>%
+  stretch_tsibble(.step = 1, .init = 4000)
+
+## comparando dois modelos
+## model1 = ARMA(1,2)-GARCH(1,0)
+## model2 = ARMA(1,2)-GARCH(1,1)
+
+spec1 = ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), 
+                    variance.model = list(model = 'sGARCH', garchOrder = c(1, 0)), 
+                    distribution = 'std')
+
+fit1 = ugarchfit(spec1, df_tsible, solver = 'hybrid', out.sample = nrow(df_tsible)-4000)
+fore1 = ugarchforecast(fit1, data = df_tsible, n.ahead = 1, n.roll = nrow(df_tsible)-4000)
+
+## calculando RMSE
+
+
+
+# spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(1, 1)), distribution = 'std')
+# fit_05 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
+# fit_05
+
 ```
-Cross-Validation
-x = sample(df_tsible$log_retorno_dif,30)
 
-far2 = function(x, h){
-forecast(Arima(x, order=c(1, 0, 2)), h = h)
-}
 
-tsCV(x, forecastfunction = far2, h = 7, window = 10)
 
 
 

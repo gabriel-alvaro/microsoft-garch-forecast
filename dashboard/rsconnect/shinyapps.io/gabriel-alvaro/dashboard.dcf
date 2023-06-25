@@ -5,9 +5,9 @@ account: gabriel-alvaro
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 9325843
-bundleId: 7357510
+bundleId: 7381696
 url: https://gabriel-alvaro.shinyapps.io/dashboard/
-when: 1687031672.90999
-lastSyncTime: 1687031672.91
+when: 1687558400.26411
+lastSyncTime: 1687558400.26412
 asMultiple: FALSE
 asStatic: FALSE
