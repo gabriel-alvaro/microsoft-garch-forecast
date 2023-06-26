@@ -1,11 +1,7 @@
-### previsão para proxima data
-library(ggfortify)
-library(fpp3)
-library(dygraphs)
-library(tsibble)
 library(zoo)
+library(dplyr)
+library(tsibble)
 library(rugarch)
-library(forecast)
 library(readr)
 
 # leitura dos dados
