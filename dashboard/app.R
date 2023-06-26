@@ -7,6 +7,7 @@ library(shinydashboard)
 library(dygraphs)
 library(quantmod)
 library(DT)
+library(readr)
 
 # header
 header = dashboardHeader(title = "Microsoft Stock Price",
@@ -189,7 +190,8 @@ server = function(input, output){
   params = data.frame(parametro = round(fit@fit$coef, 4))
   
   output$tbl_parametros = renderDataTable({
-    datatable(head(params, 9), colnames = c("Parâmetro", "Valor"), 
+    datatable(head(params, 9), 
+              colnames = c("Parâmetro", "Valor"), 
               options = list(dom = "t", ordering = FALSE)
     )
   })
