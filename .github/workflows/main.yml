@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Verificar código
+ 
       - uses: actions/checkout@master
       - uses: r-lib/actions/setup-r@master 
 
