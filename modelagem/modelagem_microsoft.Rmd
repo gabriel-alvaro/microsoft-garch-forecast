@@ -258,6 +258,57 @@ plot(fore1)
 # fit_05 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
 # fit_05
 
+specm4 <- ugarchspec(mean.model = list(armaOrder = c(2, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(1, 1)), distribution = 'std')
+ fit_M4 <- ugarchfit(specm4, df$log_retorno_dif, solver = 'hybrid')
+ fit_M4
+#Análisando os melhores modelos obtidos a partir do cross-validation 
+#ARMA(2,2)-GARCH(1,1)
+e_hatM4 = fit_M4@fit$residuals/fit_M4@fit$sigma
+opM4 = par(mfrow = c(1,2))
+acf(e_hatM4)
+acf(e_hatM4^2)
+pacf(e_hatM4)
+pacf(e_hatM4^2)
+par(op)
+Box.test(fit_M4@fit$residuals^2, type = "Ljung-Box")
+
+#ARMA(2,2)-GARCH(2,1)
+specm8<- ugarchspec(mean.model = list(armaOrder = c(2, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(2, 1)), distribution = 'std')
+ fit_M8 <- ugarchfit(specm8, df$log_retorno_dif, solver = 'hybrid')
+ fit_M8
+e_hatM8 = fit_M8@fit$residuals/fit_M8@fit$sigma
+op5 = par(mfrow = c(1,2))
+acf(e_hatM8)
+acf(e_hatM8^2)
+pacf(e_hatM8)
+pacf(e_hatM8^2)
+par(op)
+Box.test(fit_M8@fit$residuals^2, type = "Ljung-Box")
+
+#ARMA(2,2)-GARCH(2,2)
+specm16 <- ugarchspec(mean.model = list(armaOrder = c(2, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(2, 2)), distribution = 'std')
+fit_M16 <- ugarchfit(specm16, df$log_retorno_dif, solver = 'hybrid')
+fit_M16
+e_hat16 = fit_M16@fit$residuals/fit_M16@fit$sigma
+op5 = par(mfrow = c(1,2))
+acf(e_hat16)
+acf(e_hat16^2)
+pacf(e_hat16)
+pacf(e_hat16^2)
+par(op)
+Box.test(fit_M16@fit$residuals^2, type = "Ljung-Box")
+                            ##Conclusão da ánalise##
+##De fato o melhor modelo é o modelo 4, dado que os gráficos de ACF e PACF ficaram melhores e a estatística do teste foi superior.
+
+
+
+
+
+```{r}
+
+
+
+
 ```
 
 

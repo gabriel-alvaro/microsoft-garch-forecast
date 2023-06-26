@@ -1,0 +1,30 @@
+name: Agendador
+
+on:
+  schedule:
+    - cron: "10 20 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Verificar código
+      uses: actions/checkout@v2
+
+    - name: Configurar ambiente R
+      uses: r-lib/actions/setup-r@v1
+
+    - name: Instalar dependências
+      run: |
+        Rscript -e 'install.packages("ggfortify")'
+        Rscript -e 'install.packages("fpp3")'
+        Rscript -e 'install.packages("dygraphs")'
+        Rscript -e 'install.packages("tsibble")'
+        Rscript -e 'install.packages("zoo")'
+        Rscript -e 'install.packages("rugarch")'
+        Rscript -e 'install.packages("forecast")'
+        Rscript -e 'install.packages("readr")'
+
+    - name: Executar código
+      run: modelagem/garch_forecast.R
