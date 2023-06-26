@@ -40,6 +40,12 @@ frow1 = fluidRow(
       status = "primary",
       solidHeader = TRUE,
       dygraphOutput("plot_retorno", height = "300px")
+  ),
+  box(width = 4,
+      title = "Correlação",
+      status = "primary",
+      solidHeader = TRUE,
+      plotOutput("plot_acf", height = "300px")
   )
 )
 
@@ -56,16 +62,6 @@ frow2 = fluidRow(
       status = "primary",
       solidHeader = TRUE,
       dygraphOutput("plot_logvolume", height = "300px")
-  )
-)
-
-frow3 = fluidRow(
-  class= "centered-row",
-  box(width = 4,
-      title = "Correlação",
-      status = "primary",
-      solidHeader = TRUE,
-      plotOutput("plot_acf", height = "300px")
   ),
   box(width = 4,
       title = "Correlação Parcial",
@@ -95,8 +91,7 @@ body = dashboardBody(
     tabItem("dashboard",
             date_selector,
             frow1,
-            frow2,
-            frow3)
+            frow2)
   ))
 
 ui = dashboardPage(title = "ME607",
