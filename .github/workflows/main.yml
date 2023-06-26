@@ -2,7 +2,7 @@ name: Agendador
 
 on:
   schedule:
-    - cron: "59 19 * * *"
+    - cron: "10 20 * * *"
 
 jobs:
   build:
