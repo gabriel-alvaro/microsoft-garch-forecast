@@ -9,7 +9,7 @@ df = fortify.zoo(log_retorno_dif)
 df = df %>% as_tsibble(index = Index)
 
 # leitura do modelo
-fit = readRDS("garch_fit.rds")
+fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_fit.rds"))
 
 # previsao
 forecast = ugarchforecast(fit, data = df_tsibble, n.ahead = 1)
