@@ -71,9 +71,9 @@ rmse_garch %>%
   arrange(RMSE)
 
 ## modelo 4, 8 e 16 foram dados como melhores (RMSE muito proximos)
-## modelo 4 = AR(2,2)-GARCH(1,1)
-## modelo 8 = AR(2,2)-GARCH(2,1)
-## modelo 16 = AR(2,2)-GARCH(2,2)
+## modelo 4 = ARMA(2,2)-GARCH(1,1)
+## modelo 8 = ARMA(2,2)-GARCH(2,1)
+## modelo 16 = ARMA(2,2)-GARCH(2,2)
 ## optamos pelo modelo 4 por ser mais simples e apresentar menor RMSE
 
 # ajusta e salva o modelo final
