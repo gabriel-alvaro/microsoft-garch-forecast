@@ -214,23 +214,18 @@ par(op)
 ```
 
 ```{r}
-## Cross-Validation
-# 
-# x = df_tsible$log_retorno_dif[0:101]
-# 
-# 
-# far2 = function(x, h){
-#   forecast(Arima(x, order=c(1, 0, 2)), h = h)
-# }
-# 
-# tsCV(x, forecastfunction = far2, h = 2, window = 8)
+library(ggfortify)
+library(fpp3)
+library(dygraphs)
+library(tsibble)
+library(zoo)
+library(rugarch)
+library(forecast)
 
-```
 
-```{r}
 microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE,
-                                    from = '2007-01-01', return.class = 'zoo')# Coletando os dados
-microsoft = microsoft_df[,6] # Selecionando preços
+                                    from = '2007-01-01', return.class = 'zoo')
+microsoft = microsoft_df[,6]
 microsoft_retorno = diff(microsoft)
 
 log_retorno_dif = diff(log(microsoft))
@@ -249,12 +244,15 @@ spec1 = ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE),
                     variance.model = list(model = 'sGARCH', garchOrder = c(1, 0)), 
                     distribution = 'std')
 
-fit1 = ugarchfit(spec1, df_tsible, solver = 'hybrid', out.sample = nrow(df_tsible)-4000)
-fore1 = ugarchforecast(fit1, data = df_tsible, n.ahead = 1, n.roll = nrow(df_tsible)-4000)
+fit1 = ugarchfit(spec1, df_tsible, solver = 'hybrid', out.sample = nrow(df_tsible)-4001)
+fore1 = ugarchforecast(fit1, data = df_tsible, n.ahead = 1, n.roll = nrow(df_tsible)-4001)
 
 ## calculando RMSE
+fore1@forecast$seriesFor - df_tsible[4001:nrow(df_tsible),2]
 
 
+autoplot(df_tsible, .vars = log_retorno_dif)
+plot(fore1)
 
 # spec <- ugarchspec(mean.model = list(armaOrder = c(1, 2), include.mean = FALSE), variance.model = list(model = 'sGARCH', garchOrder = c(1, 1)), distribution = 'std')
 # fit_05 <- ugarchfit(spec, df$log_retorno_dif, solver = 'hybrid')
