@@ -27,4 +27,4 @@ jobs:
         Rscript -e 'install.packages("readr")'
 
     - name: Executar código
-      run: microsoft-garch-forecast/modelagem/garch_forecast.R
+      run: modelagem/garch_forecast.R
