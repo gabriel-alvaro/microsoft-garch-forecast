@@ -6,17 +6,19 @@ library(shiny)
 library(shinydashboard)
 library(dygraphs)
 library(quantmod)
+library(DT)
 
 # header
-header = dashboardHeader(title = "Microsoft Stock Price")
+header = dashboardHeader(title = "Microsoft Stock Price",
+                         tags$li(class = 'dropdown', tags$a(HTML(paste(textOutput("update"))))))
 
 # sidebar
 sidebar = dashboardSidebar(
   sidebarMenu(menuItem("Início", tabName = "inicio", icon = icon("house")),
-              menuItem("Dashboard", tabName = "dashboard", icon = icon("chart-simple"))))
+              menuItem("Dashboard", tabName = "dashboard", icon = icon("chart-simple")),
+              menuItem("Previsão", tabName = "previsao", icon = icon("magnifying-glass-chart"))))
 
 # body
-
 date_selector = fluidRow(
   class = "centered-row",
   box(
@@ -72,12 +74,20 @@ frow2 = fluidRow(
 )
 
 ftext1 = fluidPage(
-  mainPanel(
-    tags$ul(
-      tags$li("Gabriel Alvaro Batista"),
-      tags$li("Geovani Reolon de Sousa"),
-      tags$li("Pedro Pimentel Cabrini")
-    )
+  tags$ul(
+    tags$li("Gabriel Alvaro Batista"),
+    tags$li("Geovani Reolon de Sousa"),
+    tags$li("Pedro Pimentel Cabrini")
+  )
+)
+
+ftext2 = fluidPage(
+  h2(strong("Modelo")),
+  p("O modelo escolhido foi um", strong("ARMA(2,2)-GARCH(1,1).")),
+  box(
+    title = "Parâmetros",
+    width = 3,
+    dataTableOutput("tbl_parametros")
   )
 )
 
@@ -91,7 +101,9 @@ body = dashboardBody(
     tabItem("dashboard",
             date_selector,
             frow1,
-            frow2)
+            frow2),
+    tabItem("previsao",
+            ftext2)
   ))
 
 ui = dashboardPage(title = "ME607",
@@ -163,6 +175,23 @@ server = function(input, output){
   ## plot pacf
   output$plot_pacf = renderPlot({
     pacf(microsoft_retorno()[,2], na.action = na.pass, main = "", ylab = "")
+  })
+  
+  ## update
+  output$update = renderText({
+    Sys.setenv(TZ = "America/Sao_Paulo")
+    paste0("Última atualização: \t", format(Sys.time(), "%d/%m/%Y %H:%M:%S"), " (UTC-3)")
+  })
+  
+  ## tabela parametros
+  fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_fit.rds"))
+  
+  params = data.frame(parametro = round(fit@fit$coef, 4))
+  
+  output$tbl_parametros = renderDataTable({
+    datatable(head(params, 9), colnames = c("Parâmetro", "Valor"), 
+              options = list(dom = "t", ordering = FALSE)
+    )
   })
 }
 
