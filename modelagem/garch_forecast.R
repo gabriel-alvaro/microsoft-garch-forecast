@@ -22,7 +22,7 @@ df = df %>% as_tsibble(index = Index)
 fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_fit.rds"))
 
 # previsao
-forecast = ugarchforecast(fit, data = df_tsibble, n.ahead = 1)
+forecast = ugarchforecast(fit, data = df, n.ahead = 1)
 
 ######### primeira execucao #########
 # gerando arquivo .csv
@@ -49,10 +49,13 @@ new_forecast = data.frame(data = as.Date(colnames(forecast@forecast$seriesFor)) 
                           previsao_sigma = round(forecast@forecast$sigmaFor[1], 4))
 
 # leitura da previsao antiga
-forecast_data = read_csv("https://raw.githubusercontent.com/gabriel-alvaro/microsoft-garch-forecast/main/previsoes.csv")
+forecast_data = read_csv("https://raw.githubusercontent.com/gabriel-alvaro/microsoft-garch-forecast/main/previsoes.csv",
+                         show_col_types = FALSE)
 
 # adiciona nova previsao a ultima linha do dataframe
-forecast_data = rbind(forecast_data, new_forecast)
+if(as.data.frame(forecast_data)[nrow(forecast_data),1] != new_forecast[,1]){
+  rbind(forecast_data, new_forecast)
+}
 
 # salva o novo arquivo .csv
 write_csv(forecast_data, file = "../previsoes.csv", append = FALSE, col_names = TRUE)
