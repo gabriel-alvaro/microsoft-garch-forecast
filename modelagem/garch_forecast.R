@@ -49,8 +49,8 @@ forecast_data = read_csv("https://raw.githubusercontent.com/gabriel-alvaro/micro
                          show_col_types = FALSE)
 
 # adiciona nova previsao a ultima linha do dataframe
-if(as.data.frame(forecast_data)[nrow(forecast_data),1] != new_forecast[,1]){
-  rbind(forecast_data, new_forecast)
+if(as.data.frame(forecast_data)[nrow(forecast_data),1] != new_forecast[,1] || is.na(forecast_data[1,1])){
+  forecast_data = rbind(forecast_data, new_forecast)
 }
 
 # salva o novo arquivo .csv
