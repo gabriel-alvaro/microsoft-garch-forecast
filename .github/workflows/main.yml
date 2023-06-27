@@ -23,6 +23,8 @@ jobs:
 
       - name: Executar código
         run: Rscript modelagem/garch_forecast.R
+      - name: Debug
+        run: ls -R  
       - name: Commit
         run: |
           git config --local user.name github-actions
