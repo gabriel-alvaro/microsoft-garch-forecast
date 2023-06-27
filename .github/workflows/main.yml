@@ -16,7 +16,7 @@ jobs:
         run:  
           R -e 'install.packages("tsibble")'
           R -e 'install.packages("zoo")'
-          R -e 'install.packages("rugarch")
+          R -e 'install.packages("rugarch")'
           R -e 'install.packages("readr")'
 
       - name: Executar código
