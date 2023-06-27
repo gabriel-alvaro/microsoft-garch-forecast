@@ -58,5 +58,5 @@ if(is.na(forecast_data[1,1])){
 }
 
 # salva o novo arquivo .csv
-write_csv(forecast_data, file = "../previsoes.csv", append = FALSE, col_names = TRUE)
+write_csv(forecast_data, file = "previsoes2.csv", append = FALSE, col_names = TRUE)
 
