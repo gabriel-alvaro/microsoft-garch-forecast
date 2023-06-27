@@ -20,44 +20,12 @@ fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/ra
 # previsao
 forecast = ugarchforecast(fit, data = df, n.ahead = 1)
 
-######### primeira execucao #########
-# gerando arquivo .csv
-
-# forecast_data = data.frame(data = as.Date(character()),
-#                            previsao_retorno = character(),
-#                            previsao_sigma = character())
-# 
-# new_forecast = c(as.character(as.Date(colnames(forecast@forecast$seriesFor)) + 1),
-#                  round(forecast@forecast$seriesFor[1], 4),
-#                  round(forecast@forecast$sigmaFor[1], 4))
-# 
-# forecast_data[nrow(forecast_data)+1, ] = new_forecast
-# forecast_data
-# 
-# write_csv(forecast_data, file = "../previsoes.csv", append = TRUE,
-#           col_names = TRUE)
-
-#####################################
-
 # nova previsao
 new_forecast = data.frame(data = as.Date(colnames(forecast@forecast$seriesFor)) + 1,
                           previsao_retorno = round(forecast@forecast$seriesFor[1], 4),
                           previsao_sigma = round(forecast@forecast$sigmaFor[1], 4))
 
-# leitura da previsao antiga
-forecast_data = read_csv("https://raw.githubusercontent.com/gabriel-alvaro/microsoft-garch-forecast/main/previsoes.csv",
-                         show_col_types = FALSE)
-
-# adiciona nova previsao a ultima linha do dataframe
-if(as.data.frame(forecast_data)[nrow(forecast_data),1] != new_forecast[,1] && !is.na(forecast_data[1,1])){
-  forecast_data = rbind(forecast_data, new_forecast)
-}
-
-if(is.na(forecast_data[1,1])){
-  forecast_data = new_forecast
-}
-
 # salva o novo arquivo .csv
-write_csv(forecast_data, file = paste0(format(Sys.time(), "%Y-%m-%d_%Hh%M"), "_previsao.csv"), 
+write_csv(new_forecast, file = paste0("../previsoes/", new_forecast$data, "_previsao.csv"), 
           append = FALSE, col_names = TRUE)
 
