@@ -6,16 +6,17 @@ library(readr)
 
 # leitura dos dados
 microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE,
-                                    from = '2007-01-01', return.class = 'zoo')
+                                    from = '2007-01-01', to = Sys.Date(), return.class = 'zoo')
 
 log_retorno_dif = diff(log(microsoft_df[,6]))
 
 df = fortify.zoo(log_retorno_dif)
 df = df %>% as_tsibble(index = Index)
 
-# leitura do modelo
+# leitura do modelo e ajuste aos dados
 # ARMA(2,2)-GARCH(1,1)
-fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_fit.rds"))
+spec = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_spec.rds"))
+fit = ugarchfit(spec, df, solver = 'hybrid')
 
 # previsao
 forecast = ugarchforecast(fit, data = df, n.ahead = 1)
