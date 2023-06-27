@@ -8,7 +8,7 @@ library(forecast)
 
 # leitura dos dados
 microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE,
-                                    from = '2007-01-01', return.class = 'zoo')
+                                    from = '2007-01-01', to = Sys.Date(), return.class = 'zoo')
 microsoft = microsoft_df[,6]
 microsoft_retorno = diff(microsoft)
 
@@ -55,7 +55,7 @@ colnames(errors2_garch) = paste0("errors2_garch", 1:(nrow(df_tsible)-4000))
 
 for(j in 1:length(models)){
   for (i in 1:(nrow(df_tsible)-4000)){
-    errors2_garch[j,] = ((fore[[j]]@forecast$seriesFor[1,] - tail(df_tsible, 146)[,2])^2)[,1]
+    errors2_garch[j,] = ((fore[[j]]@forecast$seriesFor[1,] - tail(df_tsible, (nrow(df_tsible)-4000))[,2])^2)[,1]
   }
 }
 
@@ -78,7 +78,7 @@ rmse_garch %>%
 
 # ajusta e salva o modelo final
 fit = ugarchfit(models[[4]], df_tsible, solver = 'hybrid')
-saveRDS(fit, file = "garch_fit.rds")
+saveRDS(models[[4]], file = "garch_spec.rds")
 
 ###############################################################
 ######      CROSS VALIDATION (IMPLEMENTACAO MANUAL)      ###### 
