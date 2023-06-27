@@ -19,6 +19,7 @@ jobs:
           R -e 'install.packages("rugarch")'
           R -e 'install.packages("readr")'
           R -e 'install.packages("dplyr")'
+          R -e 'install.packages("quantmod")'
 
       - name: Executar código
         run: Rscript modelagem/garch_forecast.R
