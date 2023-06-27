@@ -21,4 +21,15 @@ jobs:
           R -e 'install.packages("dplyr")'
 
       - name: Executar código
-        run: Rscript R modelagem/garch_forecast.R
+        run: Rscript modelagem/garch_forecast.R
+      - name: Commit
+        run: |
+          git config --local user.name github-actions
+          git config --local user.email "actions@github.com"
+          git add --all
+          git commit -am "add Data"
+          git push
+        env:
+          REPO_KEY: ${{secrets.GITHUB_TOKEN}}
+          username: github-actions
+ 
