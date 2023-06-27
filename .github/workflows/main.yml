@@ -2,7 +2,7 @@ name: Agendador
 
 on:
   schedule:
-    - cron: '30 8 * * *' 
+    - cron: '16 14 * * *' 
 
 jobs:
   scrape:
