@@ -58,5 +58,6 @@ if(is.na(forecast_data[1,1])){
 }
 
 # salva o novo arquivo .csv
-write_csv(forecast_data, file = "previsoes.csv", append = FALSE, col_names = TRUE)
+write_csv(forecast_data, file = paste0(format(Sys.time(), "%Y-%m-%d_%Hh%M"), "_previsao.csv"), 
+          append = FALSE, col_names = TRUE)
 
