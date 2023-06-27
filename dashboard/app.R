@@ -8,16 +8,18 @@ library(dygraphs)
 library(quantmod)
 library(DT)
 library(readr)
+library(tsibble)
+library(rugarch)
+library(zoo)
 
 # header
 header = dashboardHeader(title = "Microsoft Stock Price",
                          tags$li(class = 'dropdown', tags$a(HTML(paste(textOutput("update"))))))
 
 # sidebar
-sidebar = dashboardSidebar(
-  sidebarMenu(menuItem("Início", tabName = "inicio", icon = icon("house")),
-              menuItem("Dashboard", tabName = "dashboard", icon = icon("chart-simple")),
-              menuItem("Previsão", tabName = "previsao", icon = icon("magnifying-glass-chart"))))
+sidebar = dashboardSidebar(width = 150,
+                           sidebarMenu(menuItem("Início", tabName = "inicio", icon = icon("house")),
+                                       menuItem("Dashboard", tabName = "dashboard", icon = icon("chart-simple"))))
 
 # body
 date_selector = fluidRow(
@@ -74,21 +76,33 @@ frow2 = fluidRow(
   )
 )
 
-ftext1 = fluidPage(
-  tags$ul(
-    tags$li("Gabriel Alvaro Batista"),
-    tags$li("Geovani Reolon de Sousa"),
-    tags$li("Pedro Pimentel Cabrini")
-  )
-)
-
-ftext2 = fluidPage(
-  h2(strong("Modelo")),
-  p("O modelo escolhido foi um", strong("ARMA(2,2)-GARCH(1,1).")),
+ftextInicio = fluidPage(
+  h1("Microsoft - Previsão de Ações"),
+  h4("Neste projeto, foram coletados e analisados dados da ação MSFT (Microsoft), entre o período de 2007 à 2023,",
+     "a fim de realizar previsões dos retornos esperados no dia seguinte."),
+  h4("Os arquivos desse projeto, bem como o histórico de previsões, podem ser encontrados no ",
+     tags$a(href= "https://github.com/gabriel-alvaro/microsoft-garch-forecast", "GitHub")),
+  tags$head(
+    tags$style(HTML(
+      "#content {
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          text-align: left;
+          padding-bottom: 10px;
+        }
+      "))),
+  tags$div(id = "content",
+           h4(p("Trabalho desenvolvido por"),
+              tags$ul(
+                tags$li("Gabriel Alvaro Batista"),
+                tags$li("Geovani Reolon de Sousa"),
+                tags$li("Pedro Pimentel Cabrini")
+              ))),
   box(
-    title = "Parâmetros",
-    width = 3,
-    dataTableOutput("tbl_parametros")
+    title = "Última Previsão",
+    width = 4,
+    dataTableOutput("tbl_previsoes")
   )
 )
 
@@ -96,16 +110,13 @@ body = dashboardBody(
   tags$style(".centered-row { display: flex; justify-content: center; }"),
   tabItems(
     tabItem("inicio",
-            h2("ME607 - Trabalho Final"),
-            p("Trabalho desenvolvido por"),
-            ftext1),
+            ftextInicio),
     tabItem("dashboard",
             date_selector,
             frow1,
-            frow2),
-    tabItem("previsao",
-            ftext2)
-  ))
+            frow2)
+  )
+)
 
 ui = dashboardPage(title = "ME607",
                    header,
@@ -118,7 +129,7 @@ server = function(input, output){
   microsoft_df = reactive({
     data = fortify.zoo(quantmod::getSymbols("MSFT", 
                                             src = "yahoo", auto.assign = FALSE, 
-                                            from = '2007-01-01', return.class = 'zoo'))
+                                            from = '2007-01-01', to = Sys.Date() + 1, return.class = 'zoo'))
     data
   })
   
@@ -184,16 +195,33 @@ server = function(input, output){
     paste0("Última atualização: \t", format(Sys.time(), "%d/%m/%Y %H:%M:%S"), " (UTC-3)")
   })
   
-  ## tabela parametros
-  fit = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_fit.rds"))
+  ## tabela previsoes
+  forecast_data = reactive({
+    microsoft_df = getSymbols("MSFT", 
+                              src = "yahoo", auto.assign = FALSE, 
+                              from = '2007-01-01', to = Sys.Date() + 1, return.class = 'zoo')
+    
+    log_retorno_dif = diff(log(microsoft_df[,6]))
+    df = fortify.zoo(log_retorno_dif)
+    df = as_tsibble(df, index = Index)
+    
+    spec = readRDS(url("https://github.com/gabriel-alvaro/microsoft-garch-forecast/raw/main/modelagem/garch_spec.rds"))
+    fit = ugarchfit(spec, df, solver = 'hybrid')
+    
+    # previsao
+    forecast = ugarchforecast(fit, data = df, n.ahead = 1)
+    
+    # nova previsao
+    data = data.frame(data = as.Date(colnames(forecast@forecast$seriesFor)) + 1,
+                      previsao_retorno = round(forecast@forecast$seriesFor[1], 4),
+                      previsao_sigma = round(forecast@forecast$sigmaFor[1], 4))
+    data
+  })
   
-  params = data.frame(parametro = round(fit@fit$coef, 4))
-  
-  output$tbl_parametros = renderDataTable({
-    datatable(head(params, 9), 
-              colnames = c("Parâmetro", "Valor"), 
-              options = list(dom = "t", ordering = FALSE)
-    )
+  output$tbl_previsoes = renderDataTable({
+    datatable(forecast_data(),
+              colnames = c("Data", "Previsão (Retorno)", "Previsão (Volatilidade)"),
+              options = list(dom = "t", ordering = FALSE))
   })
 }
 
