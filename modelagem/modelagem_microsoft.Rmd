@@ -299,16 +299,6 @@ par(op)
 Box.test(fit_M16@fit$residuals^2, type = "Ljung-Box")
                             ##Conclusão da ánalise##
 ##De fato o melhor modelo é o modelo 4, dado que os gráficos de ACF e PACF ficaram melhores e a estatística do teste foi superior.
-
-
-
-
-
-```{r}
-
-
-
-
 ```
 
 
