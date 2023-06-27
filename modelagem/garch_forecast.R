@@ -6,7 +6,7 @@ library(readr)
 
 # leitura dos dados
 microsoft_df = quantmod::getSymbols("MSFT", src = "yahoo", auto.assign = FALSE,
-                                    from = '2007-01-01', return.class = 'zoo')
+                                    from = '2007-01-01', to = Sys.Date() + 1, return.class = 'zoo')
 
 log_retorno_dif = diff(log(microsoft_df[,6]))
 
