@@ -18,6 +18,7 @@ jobs:
           R -e 'install.packages("zoo")'
           R -e 'install.packages("rugarch")'
           R -e 'install.packages("readr")'
+          R -e 'install.packages("dplyr")'
 
       - name: Executar código
         run: Rscript R modelagem/garch_forecast.R
