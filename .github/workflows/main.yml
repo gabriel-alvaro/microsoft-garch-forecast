@@ -1,8 +1,7 @@
 name: Agendador
 
 on:
-  schedule:
-    - cron: '30 4 * * *'
+workflow_dispatc
 
 jobs:
   scrape:
